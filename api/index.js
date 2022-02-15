@@ -1,7 +1,15 @@
 const express = require('express');
 const path    = require('path');
 const multer  = require('multer');
-const imageProcessor = require("./picture-processor");
+const {
+  SUPPORTED_MIME_TYPES,
+  ImageProcessor,
+  ImageProcessorErrorMask,
+  ImageProcessorParams,
+  ImageProcessorTextWatermarkDescription,
+  ImageProcessorPictureWatermarkDescription,
+  ImageProcessorError
+} = require('./picture-processor');
 
 // TODO: Implement error handling.
 
@@ -69,14 +77,48 @@ const customUpload = multer({
 app.post('/api/watermark', regularUpload.fields([{ name: 'picture', maxCount: 10 }]), async (req, res) => {
   // // console.log();
   // res.contentType('image/png');
-  // res.send(req.files['picture'][0].buffer);
+  // res.send(req.files['picture'][0]); return;
   // // return;Buffer()
   // return;
 
-  const buffer = await imageProcessor.processPicture(req.files['picture'][0].buffer, "png");
+  let response = [];
+
+  const imageProcessor = new ImageProcessor();
+
+  for (const file of req.files["picture"]) {
+    const originalBuffer = file.buffer;
+    const mimeType       = file.mimetype;
+    console.log("MIMETYPE", mimeType);
+    const watermarkDescription = new ImageProcessorTextWatermarkDescription({ text: "SomeText" });
+
+    try {
+      const buffer = await imageProcessor.processPicture(new ImageProcessorParams(originalBuffer, mimeType, watermarkDescription));
+      response.push({ buffer, mimeType });
+      console.log("PROCESSED");
+    }
+    catch (e) {
+      console.log(`ERROR ${e.getMask()}`);
+    }
+    console.log(`sending response 0${response}`);
+  }
+
+  // const buffer = await imageProcessor.processPicture(req.files['picture'][0].buffer, "png");
   
-  res.contentType('image/png');
-  res.send(buffer);
+  
+  if (response.length > 0) {
+    response.forEach(r => {
+      res.contentType(r.mimeType);
+      res.send       (r.buffer);
+    });
+  }
+  else {
+    res.status(200); // TODO
+  }
+
+  
+
+  // res.contentType('image/png');
+  // res.send(buffer);
   // res.send();
 });
 

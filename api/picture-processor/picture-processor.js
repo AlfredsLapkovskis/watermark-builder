@@ -131,43 +131,43 @@ class ImageProcessorTextWatermarkDescription {
     }
 
     get textOrDefault() {
-        return (this.text instanceof String) ? text : "";
+        return (typeof this.text === "string") ? this.text : "";
     }
 
     get fontFamilyOrDefault() {
-        return (this.fontFamily instanceof String && this.fontFamily.length > 0) 
+        return (typeof this.fontFamily === "string" && this.fontFamily.length > 0) 
             ? fontFamily 
-            : ImageProcessorTextWatermarkDescription.defaultFontFamily; // TODO: Add dictionary with all supported font families, and check it.
+            : ImageProcessorTextWatermarkDescription.constants.defaultFontFamily; // TODO: Add dictionary with all supported font families, and check it.
     }
 
     get fontSizeOrDefault() {
-        return (this.fontSize instanceof Number && this.fontSize > 0) 
+        return (typeof this.fontSize === "number" && this.fontSize > 0) 
             ? Math.round(fontSize) 
-            : ImageProcessorTextWatermarkDescription.defaultFontSize;
+            : ImageProcessorTextWatermarkDescription.constants.defaultFontSize;
     }
 
     get fontStyleOrDefault() {
-        return (this.fontStyle instanceof String && this.fontStyle.length > 0) 
+        return (typeof this.fontStyle === "string" && this.fontStyle.length > 0) 
             ? this.fontStyle 
-            : ImageProcessorTextWatermarkDescription.defaultFontStyle; // TODO: Add dictionary with all supported font styles, and check it.
+            : ImageProcessorTextWatermarkDescription.constants.defaultFontStyle; // TODO: Add dictionary with all supported font styles, and check it.
     }
 
     get fontDecorationsOrDefault() {
-        return (this.fontDecorations instanceof String && this.fontDecorations.length > 0) 
+        return (typeof this.fontDecorations === "string" && this.fontDecorations.length > 0) 
             ? this.fontDecorations 
-            : ImageProcessorTextWatermarkDescription.defaultFontDecorations; // TODO: Add dictionary with all supported font styles, and check it.
+            : ImageProcessorTextWatermarkDescription.constants.defaultFontDecorations; // TODO: Add dictionary with all supported font styles, and check it.
     }
 
     get colorOrDefault() {
-        return (this.color instanceof Number && color >= 0) 
+        return (typeof this.color === "number" && color >= 0) 
             ? Math.round(this.color) 
-            : ImageProcessorTextWatermarkDescription.defaultColor;
+            : ImageProcessorTextWatermarkDescription.constants.defaultColor;
     }
 
     get opacityOrDefault() {
-        return (this.opacity instanceof Number && this.opacity >= 0.0 && this.opacity <= 1.0) 
+        return (typeof this.opacity === "number" && this.opacity >= 0.0 && this.opacity <= 1.0) 
             ? this.opacity 
-            : ImageProcessorTextWatermarkDescription.defaultOpacity;
+            : ImageProcessorTextWatermarkDescription.constants.defaultOpacity;
     }
 
     get shadowOrDefault() {
@@ -175,15 +175,15 @@ class ImageProcessorTextWatermarkDescription {
     }
 
     get rotationAngleOrDefault() {
-        return (this.rotationAngle instanceof Number) 
+        return (typeof this.rotationAngle === "number") 
             ? Math.round(this.rotationAngle) 
-            : ImageProcessorTextWatermarkDescription.defaultRotationAngle;
+            : ImageProcessorTextWatermarkDescription.constants.defaultRotationAngle;
     }
 
     get frequencyLevelOrDefault() {
-        return (this.frequencyLevel instanceof Number && this.frequencyLevel >= minFrequenceLevel && this.frequencyLevel <= maxFrequencyLevel) 
+        return (typeof this.frequencyLevel === "number" && this.frequencyLevel >= minFrequenceLevel && this.frequencyLevel <= maxFrequencyLevel) 
             ? Math.round(this.frequencyLevel) 
-            : ImageProcessorTextWatermarkDescription.defaultFrequencyLevel;
+            : ImageProcessorTextWatermarkDescription.constants.defaultFrequencyLevel;
     }
 }
 
@@ -216,7 +216,7 @@ class ImageProcessor {
     }
 
     async processPicture(params) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const error = ImageProcessorValidator.validateParams(params);
 
             if (error != null) {
@@ -228,7 +228,7 @@ class ImageProcessor {
             const buffer               = params.buffer;
             const watermarkDescription = params.watermarkDescription;
 
-            const image;
+            let image;
 
             try {
                 image = await this.#createImageObject(buffer);
@@ -254,42 +254,60 @@ class ImageProcessor {
         context.drawImage(image, 0, 0);
 
         if (watermarkDescription instanceof ImageProcessorTextWatermarkDescription) {
-            const text           = watermarkDescription.textOrDefault          ();
-            const fontFamily     = watermarkDescription.fontFamilyOrDefault    ();
-            const fontSize       = watermarkDescription.fontSizeOrDefault      ();
-            const fontStyle      = watermarkDescription.fontStyleOrDefault     ();
-            const color          = watermarkDescription.colorOrDefault         ();
-            const opacity        = watermarkDescription.opacityOrDefault       ();
-            const frequencyLevel = watermarkDescription.frequencyLevelOrDefault();
+            const text           = watermarkDescription.textOrDefault;
+            const fontFamily     = watermarkDescription.fontFamilyOrDefault;
+            const fontSize       = watermarkDescription.fontSizeOrDefault;
+            const fontStyle      = watermarkDescription.fontStyleOrDefault;
+            const color          = watermarkDescription.colorOrDefault;
+            const opacity        = watermarkDescription.opacityOrDefault;
+            const frequencyLevel = watermarkDescription.frequencyLevelOrDefault;
 
             context.fillStyle = ImageProcessorUtils.hexToRgba         (color, opacity);
             context.font      = ImageProcessorUtils.fontFromComponents(fontFamily, fontSize, fontStyle);
 
-            const textWidth                = context.measureText(text).width;
+            const textMetrics              = context.measureText(text);
+            const textWidth                = textMetrics.width; // TODO: Dont forget about zero division.
+            const textHeight               = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
             const horizontalCapacity       = width  / textWidth;
-            const verticalCapacity         = height / fontSize;
+            const verticalCapacity         = height / textHeight;
             const frequency                = frequencyLevel / ImageProcessorTextWatermarkDescription.constants.maxFrequencyLevel;
-            const horizontalItemCount      = horizontalCapacity * 0.4 + 0.4 * frequency;
-            const verticalItemCount        = verticalCapacity * 0.3 + 0.3 * frequency;
+            const horizontalItemCount      = Math.round(horizontalCapacity * 0.4 + 0.4 * frequency);
+            const verticalItemCount        = Math.round(verticalCapacity * 0.3 + 0.3 * frequency);
             const horizontalRemainingSpace = width - horizontalItemCount * textWidth;
-            const verticalRemainingSpace   = height - verticalRemainingSpace * fontSize;
+            const verticalRemainingSpace   = height - verticalItemCount * textHeight;
             const horizontalBetweenSpace   = horizontalRemainingSpace / horizontalItemCount;
             const horizontalLeadingSpace   = horizontalBetweenSpace / 2;
             const verticalBetweenSpace     = verticalRemainingSpace / verticalItemCount;
-            const verticalLeadingSpace     = verticalBetweenSpace / 2;
+            const verticalLeadingSpace     = textHeight + verticalBetweenSpace / 2;
 
-            
-
+            console.log(`text metrics ${textMetrics.actualBoundingBoxDescent} ${textMetrics.actualBoundingBoxAscent} ${textMetrics.fontBoundingBoxAscent} ${textMetrics.fontBoundingBoxDescent}`);
+            console.log(`text ${text} ${verticalLeadingSpace} h item count ${horizontalItemCount} v item count ${verticalItemCount}`);
             for (let v = 0; v < verticalItemCount; v++) {
                 for (let h = 0; h < horizontalItemCount; h++) {
+                    // console.log(`drawing text ${v} ${h}`);
                     const xOffset = horizontalLeadingSpace + h * (textWidth + horizontalBetweenSpace);
-                    const yOffset = verticalLeadingSpace   + v * (fontSize  + verticalBetweenSpace);
+                    const yOffset = verticalLeadingSpace   + v * (textHeight  + verticalBetweenSpace);
 
                     context.fillText(text, xOffset, yOffset);
                 }
             }
 
             /*
+
+readonly actualBoundingBoxAscent: number;
+
+readonly actualBoundingBoxDescent: number;
+
+readonly actualBoundingBoxLeft: number;
+
+readonly actualBoundingBoxRight: number;
+
+readonly fontBoundingBoxAscent: number;
+
+readonly fontBoundingBoxDescent: number;
+
+readonly width: number;
+
             betweenSpace = childCount > 0 ? remainingSpace / (childCount + 1) : 0.0;
             leadingSpace = betweenSpace;
 
@@ -357,7 +375,7 @@ class ImageProcessorValidator {
 
     static #validateWatermarkDescription(description) {
         if (description instanceof ImageProcessorTextWatermarkDescription) {
-            if (!description.text instanceof String) {
+            if (!(typeof description.text === "string")) {
                 return IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE;
             }
             else if (description.text.length == 0) {
@@ -396,7 +414,7 @@ class ImageProcessorValidator {
     }
 
     static #validateMimeType(mimeType, typeErrorMask, supportErrorMask) {
-        if (!mimeType instanceof String) {
+        if (!(typeof mimeType === "string")) {
             return typeErrorMask;
         }
         else if (!SUPPORTED_MIME_TYPES.includes(mimeType)) {
@@ -407,7 +425,7 @@ class ImageProcessorValidator {
     }
 
     static #validateBuffer(buffer, typeErrorMask) {
-        if (!buffer instanceof Buffer) {
+        if (!(buffer instanceof Buffer)) {
             return typeErrorMask;
         }
 
@@ -429,7 +447,7 @@ class ImageProcessorUtils {
     }
 
     static fontFromComponents(family, size, style) {
-        return `${size}px "${family.capitalize()}"`;
+        return `${size}px "${family.replace(/\b[a-z]/g, (char) => char.toUpperCase())}"`;
     }
 }
 
@@ -437,6 +455,8 @@ class ImageProcessorUtils {
 // ImageProcessorError
 
 class ImageProcessorError {
+
+    #mask;
 
     constructor(mask) {
         this.#mask = mask;
@@ -448,40 +468,45 @@ class ImageProcessorError {
 }
 
 
+// Exports
 
-///============================ DEPRECATED ============================///
+module.exports = Object.freeze({
+    SUPPORTED_MIME_TYPES,
+    ImageProcessorErrorMask: {
+        IMAGE_PROCESSOR_ERROR_INVALID_PARAMS_TYPE,                    
+        IMAGE_PROCESSOR_ERROR_UNSUPPORTED_MIME_TYPE,                  
+        IMAGE_PROCESSOR_ERROR_INVALID_MIME_TYPE_TYPE,                 
+        IMAGE_PROCESSOR_ERROR_INVALID_BUFFER_TYPE,                    
+        IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TYPE,     
+        IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE,
+        IMAGE_PROCESSOR_ERROR_WATERMARK_DESCRIPTION_TEXT_EMPTY,       
+        IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_MIME_TYPE_TYPE,       
+        IMAGE_PROCESSOR_ERROR_UNSUPPORTED_WATERMARK_MIME_TYPE,
+        IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE,       
+        IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER,
+    },
+    ImageProcessor,
+    ImageProcessorParams,
+    ImageProcessorTextWatermarkDescription,
+    ImageProcessorPictureWatermarkDescription,
+    ImageProcessorError
+});
 
-module.exports.SUPPORTED_MIME_TYPES = SUPPORTED_MIME_TYPES;
-module.exports.ImageProcessor       = ImageProcessor;
+// module.exports.SUPPORTED_MIME_TYPES                                          = SUPPORTED_MIME_TYPES;
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_PARAMS_TYPE                     = IMAGE_PROCESSOR_ERROR_INVALID_PARAMS_TYPE;                    
+// module.exports.IMAGE_PROCESSOR_ERROR_UNSUPPORTED_MIME_TYPE                   = IMAGE_PROCESSOR_ERROR_UNSUPPORTED_MIME_TYPE;                  
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_MIME_TYPE_TYPE                  = IMAGE_PROCESSOR_ERROR_INVALID_MIME_TYPE_TYPE;                 
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_BUFFER_TYPE                     = IMAGE_PROCESSOR_ERROR_INVALID_BUFFER_TYPE;                    
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TYPE      = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TYPE;     
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE;
+// module.exports.IMAGE_PROCESSOR_ERROR_WATERMARK_DESCRIPTION_TEXT_EMPTY        = IMAGE_PROCESSOR_ERROR_WATERMARK_DESCRIPTION_TEXT_EMPTY;       
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_MIME_TYPE_TYPE        = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_MIME_TYPE_TYPE;       
+// module.exports.IMAGE_PROCESSOR_ERROR_UNSUPPORTED_WATERMARK_MIME_TYPE         = IMAGE_PROCESSOR_ERROR_UNSUPPORTED_WATERMARK_MIME_TYPE;        
+// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE           = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE;          
+// module.exports.IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER        = IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER;
 
-module.exports.processPicture = async function (imageBuffer, imageType) {
-    return new Promise((resolve, reject) => {
-        const image = new Image();
-
-        image.onload  = _ => {
-            const buffer = _processPicture(image, imageType)
-            resolve(buffer); //TODO
-        };
-
-        image.onerror = error =>  reject(error);
-        image.src     = imageBuffer;
-    });
-}
-
-function _processPicture(image, imageType) {
-    const width  = image.width;
-    const height = image.height;
-
-    const canvas  = new Canvas(image.width, image.height, 'image');
-    const context = canvas.getContext('2d');
-    
-    context.drawImage(image, 0, 0);
-
-    context.fillStyle = "red";
-    // context.textAlign = "center";
-    context.font = '30px Roboto';
-    
-    context.fillText("TEST TEXT", 50, 100);
-    
-    return canvas.toBuffer();
-}
+// module.exports.ImageProcessor                                                = ImageProcessor;
+// module.exports.ImageProcessorParams                                          = ImageProcessorParams;
+// module.exports.ImageProcessorTextWatermarkDescription                        = ImageProcessorTextWatermarkDescription;
+// module.exports.ImageProcessorPictureWatermarkDescription                     = ImageProcessorPictureWatermarkDescription;
+// module.exports.ImageProcessorError                                           = ImageProcessorError;
