@@ -89,7 +89,7 @@ app.post('/api/watermark', regularUpload.fields([{ name: 'picture', maxCount: 10
     const originalBuffer = file.buffer;
     const mimeType       = file.mimetype;
     console.log("MIMETYPE", mimeType);
-    const watermarkDescription = new ImageProcessorTextWatermarkDescription({ text: "SomeText" });
+    const watermarkDescription = new ImageProcessorTextWatermarkDescription({ text: "SomeText", fontSize: 50 });
 
     try {
       const buffer = await imageProcessor.processPicture(new ImageProcessorParams(originalBuffer, mimeType, watermarkDescription));

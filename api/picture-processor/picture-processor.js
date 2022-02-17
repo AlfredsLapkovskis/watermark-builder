@@ -142,7 +142,7 @@ class ImageProcessorTextWatermarkDescription {
 
     get fontSizeOrDefault() {
         return (typeof this.fontSize === "number" && this.fontSize > 0) 
-            ? Math.round(fontSize) 
+            ? Math.round(this.fontSize) 
             : ImageProcessorTextWatermarkDescription.constants.defaultFontSize;
     }
 
@@ -266,7 +266,7 @@ class ImageProcessor {
             context.font      = ImageProcessorUtils.fontFromComponents(fontFamily, fontSize, fontStyle);
 
             const textMetrics              = context.measureText(text);
-            const textWidth                = textMetrics.width; // TODO: Dont forget about zero division.
+            const textWidth                = textMetrics.width;
             const textHeight               = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
             const horizontalCapacity       = width  / textWidth;
             const verticalCapacity         = height / textHeight;
@@ -280,8 +280,8 @@ class ImageProcessor {
             const verticalBetweenSpace     = verticalRemainingSpace / verticalItemCount;
             const verticalLeadingSpace     = textHeight + verticalBetweenSpace / 2;
 
-            console.log(`text metrics ${textMetrics.actualBoundingBoxDescent} ${textMetrics.actualBoundingBoxAscent} ${textMetrics.fontBoundingBoxAscent} ${textMetrics.fontBoundingBoxDescent}`);
-            console.log(`text ${text} ${verticalLeadingSpace} h item count ${horizontalItemCount} v item count ${verticalItemCount}`);
+            console.log(`image sizes={${width}, ${height}}; textSizes={${textWidth}, ${textHeight}}`);
+
             for (let v = 0; v < verticalItemCount; v++) {
                 for (let h = 0; h < horizontalItemCount; h++) {
                     // console.log(`drawing text ${v} ${h}`);
@@ -291,30 +291,6 @@ class ImageProcessor {
                     context.fillText(text, xOffset, yOffset);
                 }
             }
-
-            /*
-
-readonly actualBoundingBoxAscent: number;
-
-readonly actualBoundingBoxDescent: number;
-
-readonly actualBoundingBoxLeft: number;
-
-readonly actualBoundingBoxRight: number;
-
-readonly fontBoundingBoxAscent: number;
-
-readonly fontBoundingBoxDescent: number;
-
-readonly width: number;
-
-            betweenSpace = childCount > 0 ? remainingSpace / (childCount + 1) : 0.0;
-            leadingSpace = betweenSpace;
-
-            betweenSpace = childCount > 0 ? remainingSpace / childCount : 0.0;
-            leadingSpace = betweenSpace / 2.0;
-            */
-            
         }
         else if (watermarkDescription instanceof ImageProcessorPictureWatermarkDescription) {
 
@@ -491,22 +467,3 @@ module.exports = Object.freeze({
     ImageProcessorPictureWatermarkDescription,
     ImageProcessorError
 });
-
-// module.exports.SUPPORTED_MIME_TYPES                                          = SUPPORTED_MIME_TYPES;
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_PARAMS_TYPE                     = IMAGE_PROCESSOR_ERROR_INVALID_PARAMS_TYPE;                    
-// module.exports.IMAGE_PROCESSOR_ERROR_UNSUPPORTED_MIME_TYPE                   = IMAGE_PROCESSOR_ERROR_UNSUPPORTED_MIME_TYPE;                  
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_MIME_TYPE_TYPE                  = IMAGE_PROCESSOR_ERROR_INVALID_MIME_TYPE_TYPE;                 
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_BUFFER_TYPE                     = IMAGE_PROCESSOR_ERROR_INVALID_BUFFER_TYPE;                    
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TYPE      = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TYPE;     
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE;
-// module.exports.IMAGE_PROCESSOR_ERROR_WATERMARK_DESCRIPTION_TEXT_EMPTY        = IMAGE_PROCESSOR_ERROR_WATERMARK_DESCRIPTION_TEXT_EMPTY;       
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_MIME_TYPE_TYPE        = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_MIME_TYPE_TYPE;       
-// module.exports.IMAGE_PROCESSOR_ERROR_UNSUPPORTED_WATERMARK_MIME_TYPE         = IMAGE_PROCESSOR_ERROR_UNSUPPORTED_WATERMARK_MIME_TYPE;        
-// module.exports.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE           = IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE;          
-// module.exports.IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER        = IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER;
-
-// module.exports.ImageProcessor                                                = ImageProcessor;
-// module.exports.ImageProcessorParams                                          = ImageProcessorParams;
-// module.exports.ImageProcessorTextWatermarkDescription                        = ImageProcessorTextWatermarkDescription;
-// module.exports.ImageProcessorPictureWatermarkDescription                     = ImageProcessorPictureWatermarkDescription;
-// module.exports.ImageProcessorError                                           = ImageProcessorError;
