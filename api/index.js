@@ -10,6 +10,7 @@ const {
   ImageProcessorPictureWatermarkDescription,
   ImageProcessorError
 } = require('./picture-processor');
+const { MulterError } = require('multer');
 
 // TODO: Implement error handling.
 
@@ -38,14 +39,7 @@ const regularUpload = multer({
     headerPairs  : 2000
   },
 
-  fileFilter: (req, file, callback) => {
-    // if (supportedMimetypes.includes(file.mimetype)) {
-      callback(null, true);
-    // }
-    // else {
-    //   callback(new Error(`Unsupported image mimetype: supported mimetypes are ${supportedMimetypes.join(', ')}.`));
-    // }
-  }
+  fileFilter: (_, file, callback) => callback(null, SUPPORTED_MIME_TYPES.includes(file.mimetype))
 
 });
 
@@ -107,7 +101,9 @@ app.post('/api/watermark', regularUpload.fields([{ name: 'picture', maxCount: 10
   
   if (response.length > 0) {
     response.forEach(r => {
-      res.contentType(r.mimeType);
+      res.setHeader('Content-Type', r.mimeType);
+      res.setHeader('Content-Disposition', 'attachment; filename=image.png');
+      // res.contentType(r.mimeType);
       res.send       (r.buffer);
     });
   }
@@ -122,6 +118,12 @@ app.post('/api/watermark', regularUpload.fields([{ name: 'picture', maxCount: 10
   // res.send();
 });
 
+
+
+
+
+
+
 app.post('/api/watermark/custom', customUpload.fields([{ name: 'picture', maxCount: 10 }, { name: 'watermark', maxCount: 1 }]), (req, res) => {
 
 });
@@ -134,10 +136,116 @@ app.get('*', (req, res) => {
 });
 
 
+// API Error Codes
+
+const API_ERROR_CODE_GENERIC                        = 1;
+const API_ERROR_CODE_INVALID_WATERMARK_TEXT         = 2;
+const API_ERROR_CODE_INVALID_IMAGE_BUFFER           = 3;
+const API_ERROR_CODE_INVALID_WATERMARK_IMAGE_BUFFER = 4;
+const API_ERROR_CODE_TOO_MANY_FIELDS                = 5;
+const API_ERROR_CODE_TOO_MANY_FILES                 = 6;
+const API_ERROR_CODE_FILE_TOO_LARGE                 = 7;
+const API_ERROR_CODE_TOO_MANY_FILES                 = 8;
+const API_ERROR_CODE_FIELD_NAME_TOO_LONG            = 9;
+const API_ERROR_CODE_FIELD_TOO_LONG                 = 10;
+const API_ERROR_CODE_TOO_MANY_FIELDS                = 11;
+const API_ERROR_CODE_INVALID_FILE_TYPE              = 12;
+
+
+// Error Handling
+
+app.use((err, req, res, next) => {
+
+  let errorCodes = [];
+  let status     = 500; // Internal Server Error
+
+  if (err instanceof MulterError) {
+
+    const field = err.field;
+    let   errorCode;
+
+    switch (err.code) {
+      case 'LIMIT_PART_COUNT':
+        // do nothing
+        break;
+      case 'LIMIT_FILE_SIZE':
+        errorCode = API_ERROR_CODE_FILE_TOO_LARGE;
+        status    = 413; // Payload Too Large
+        break;
+      case 'LIMIT_FILE_COUNT':
+        errorCode = API_ERROR_CODE_TOO_MANY_FILES;
+        status    = 413; // Payload Too Large
+        break;
+      case 'LIMIT_FIELD_KEY':
+        errorCode = API_ERROR_CODE_FIELD_NAME_TOO_LONG;
+        status    = 413; // Payload Too Large
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        errorCode = API_ERROR_CODE_FIELD_TOO_LONG;
+        status    = 413; // Payload Too Large
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        errorCode = API_ERROR_CODE_TOO_MANY_FIELDS;
+        status    = 413; // Payload Too Large
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        errorCode = API_ERROR_CODE_INVALID_FILE_TYPE;
+        status    = 415; // Unsupported Media Type
+        break;
+      default:
+        break;
+    }
+
+    if (errorCode !== undefined) {
+      if (field !== undefined) {
+        errorCodes.push({ code: errorCode, data: field });
+      }
+      else {
+        errorCodes.push({ code: errorCode });
+      }
+    }
+
+  }
+  else if (err instanceof ImageProcessorError) {
+
+    const mask                 = err.getMask();
+    const watermarkTextErrors  = ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_DESCRIPTION_TEXT_TYPE 
+                               | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_WATERMARK_DESCRIPTION_TEXT_EMPTY;
+    const imageBufferErrors    = ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_INVALID_BUFFER_TYPE
+                               | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER;
+    const watermarkImageErrors = ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE
+                               | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_FAILED_LOADING_WATERMARK_IMAGE_FROM_BUFFER;
+
+    if (mask & watermarkTextErrors != 0) {
+      errorCodes.push({ code: API_ERROR_CODE_INVALID_WATERMARK_TEXT });
+      status = 400; // Bad Request
+    }
+    if (mask & imageBufferErrors != 0) {
+      errorCodes.push({ code: API_ERROR_CODE_INVALID_IMAGE_BUFFER });
+      status = 400; // Bad Request
+    }
+    if (mask & watermarkImageErrors != 0) {
+      errorCodes.push({ code: API_ERROR_CODE_INVALID_WATERMARK_IMAGE_BUFFER });
+      status = 400; // Bad Request
+    }
+
+  }
+
+  res.status     (status);
+  res.contentType('application/json');
+
+  if (errors.length > 0) {
+    res.send(JSON.stringify({ errorCodes }));
+  }
+  else {
+    res.send(JSON.stringify({ errorCodes: [ API_ERROR_CODE_GENERIC ] }));
+  }
+
+});
+
+
 // Listen to port
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-  console.log(`Listening to port: ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Listening to port: ${PORT}`));
