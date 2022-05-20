@@ -25,107 +25,89 @@ const supportedMimetypes = [
   'image/svg+xml'
 ];
 
-const regularUpload = multer({
+class ApiError {
+  
+  #code;
 
+  constructor(code) {
+    this.#code = code
+  }
+
+  getCode() {
+    return this.#code;
+  }
+}
+
+const upload = multer({
   storage: multer.memoryStorage(),
-
   limits : {
     fieldNameSize: 100,
-    fieldSize    : 10 * 1024,        // 10Kb
+    fieldSize    : 10 * 1024,
     fields       : 50,
-    fileSize     : 10 * 1024 * 1024, // 10Mb
-    files        : 10,               // 10 images
+    fileSize     : 10 * 1024 * 1024,
+    files        : 2,
     parts        : Infinity,
     headerPairs  : 2000
-  },
-
-  fileFilter: (_, file, callback) => callback(null, SUPPORTED_MIME_TYPES.includes(file.mimetype))
-
+  }
 });
 
-const customUpload = multer({
+const uploadFields = [
+  { name: 'picture',   maxCount: 1 },
+  { name: 'watermark', maxCount: 1 }
+];
 
-  storage: multer.memoryStorage(),
+app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) => {
+  // try {
+    const pictureFile = req.files["picture"][0];
 
-  limits : {
-    fieldNameSize: 100,
-    fieldSize    : 10 * 1024,        // 10Kb
-    fields       : 50,
-    fileSize     : 10 * 1024 * 1024, // 10Mb
-    files        : 11,               // 10 images + 1 custom watermark
-    parts        : Infinity,
-    headerPairs  : 2000
-  },
+    if (pictureFile === undefined || pictureFile === null) {
+      throw new ApiError(API_ERROR_CODE_NO_PICTURE_PROVIDED);
+    }
 
-  fileFilter: (req, file, callback) => {
-    if (supportedMimetypes.includes(file.mimetype)) {
-      callback(null, true);
+    // pictureFile = pictureFile[0];
+
+    const customWatermark = req.files["watermark"];
+    const watermarkText   = req.body ["text"     ];
+
+    if (customWatermark !== undefined && customWatermark !== null) {
+
+    }
+    else if (watermarkText !== undefined && watermarkText !== null) {
+      console.log(JSON.stringify(req.body));
+
+      const watermarkDescription = new ImageProcessorTextWatermarkDescription({
+        text: req.body["text"],
+        fontFamily: req.body["font_family"],
+        fontSize: req.body["font_size"],
+        fontItalic: req.body["font_italic"],
+        fontDecorations: req.body["font_decorations"],
+        fontWeight: req.body["font_weight"],
+        color: req.body["color"],
+        opacity: req.body["opacity"],
+        shadowOffsetX: req.body["shadow_offset_x"],
+        shadowOffsetY: req.body["shadow_offset_y"],
+        shadowBlurRadius: req.body["shadow_blur_radius"],
+        shadowOpactity: req.body["shadow_opacity"],
+        rotationAngle: req.body["rotation_angle"],
+        densityLevel: req.body["density_level"]
+      });
+
+      const imageProcessorParams = new ImageProcessorParams(pictureFile.buffer, pictureFile.mimetype, watermarkDescription);
+
+      const buffer = await new ImageProcessor().processPicture(imageProcessorParams);
+
+      res.setHeader('Content-Type', pictureFile.mimetype);
+      res.setHeader('Content-Disposition', `attachment; filename=${pictureFile.originalname}`);
+
+      res.send(buffer);
     }
     else {
-      callback(new Error(`Unsupported image mimetype: supported mimetypes are ${supportedMimetypes.join(', ')}.`));
+      throw new ApiError(API_ERROR_CODE_NO_WATERMARK_DATA_PROVIDED);
     }
-  }
-
-});
-
-app.post('/api/watermark', regularUpload.fields([{ name: 'picture', maxCount: 10 }]), async (req, res) => {
-  // // console.log();
-  // res.contentType('image/png');
-  // res.send(req.files['picture'][0]); return;
-  // // return;Buffer()
-  // return;
-
-  let response = [];
-
-  const imageProcessor = new ImageProcessor();
-
-  for (const file of req.files["picture"]) {
-    const originalBuffer = file.buffer;
-    const mimeType       = file.mimetype;
-    console.log("MIMETYPE", mimeType);
-    const watermarkDescription = new ImageProcessorTextWatermarkDescription({ text: "SomeText", fontSize: 50 });
-
-    try {
-      const buffer = await imageProcessor.processPicture(new ImageProcessorParams(originalBuffer, mimeType, watermarkDescription));
-      response.push({ buffer, mimeType });
-      console.log("PROCESSED");
-    }
-    catch (e) {
-      console.log(`ERROR ${e.getMask()}`);
-    }
-    console.log(`sending response 0${response}`);
-  }
-
-  // const buffer = await imageProcessor.processPicture(req.files['picture'][0].buffer, "png");
-  
-  
-  if (response.length > 0) {
-    response.forEach(r => {
-      res.setHeader('Content-Type', r.mimeType);
-      res.setHeader('Content-Disposition', 'attachment; filename=image.png');
-      // res.contentType(r.mimeType);
-      res.send       (r.buffer);
-    });
-  }
-  else {
-    res.status(200); // TODO
-  }
-
-  
-
-  // res.contentType('image/png');
-  // res.send(buffer);
-  // res.send();
-});
-
-
-
-
-
-
-
-app.post('/api/watermark/custom', customUpload.fields([{ name: 'picture', maxCount: 10 }, { name: 'watermark', maxCount: 1 }]), (req, res) => {
-
+  // }
+  // catch (e) {
+  //   next(e);
+  // }
 });
 
 
@@ -145,11 +127,11 @@ const API_ERROR_CODE_INVALID_WATERMARK_IMAGE_BUFFER = 4;
 const API_ERROR_CODE_TOO_MANY_FIELDS                = 5;
 const API_ERROR_CODE_TOO_MANY_FILES                 = 6;
 const API_ERROR_CODE_FILE_TOO_LARGE                 = 7;
-const API_ERROR_CODE_TOO_MANY_FILES                 = 8;
-const API_ERROR_CODE_FIELD_NAME_TOO_LONG            = 9;
-const API_ERROR_CODE_FIELD_TOO_LONG                 = 10;
-const API_ERROR_CODE_TOO_MANY_FIELDS                = 11;
-const API_ERROR_CODE_INVALID_FILE_TYPE              = 12;
+const API_ERROR_CODE_FIELD_NAME_TOO_LONG            = 8;
+const API_ERROR_CODE_FIELD_TOO_LONG                 = 9;
+const API_ERROR_CODE_INVALID_FILE_TYPE              = 10;
+const API_ERROR_CODE_NO_PICTURE_PROVIDED            = 11;
+const API_ERROR_CODE_NO_WATERMARK_DATA_PROVIDED     = 12;
 
 
 // Error Handling
@@ -159,8 +141,11 @@ app.use((err, req, res, next) => {
   let errorCodes = [];
   let status     = 500; // Internal Server Error
 
-  if (err instanceof MulterError) {
-
+  if (err instanceof ApiError) {
+    errorCodes.push({ code: err.getCode()});
+    status = 400; // Bad request
+  }
+  else if (err instanceof MulterError) {
     const field = err.field;
     let   errorCode;
 
@@ -233,14 +218,10 @@ app.use((err, req, res, next) => {
 
   res.status     (status);
   res.contentType('application/json');
-
-  if (errors.length > 0) {
-    res.send(JSON.stringify({ errorCodes }));
-  }
-  else {
-    res.send(JSON.stringify({ errorCodes: [ API_ERROR_CODE_GENERIC ] }));
-  }
-
+  res.send       (JSON.stringify(errorCodes.length > 0 
+    ? { errorCodes } 
+    : { errorCodes: [ { code: API_ERROR_CODE_GENERIC } ] }
+  ));
 });
 
 
