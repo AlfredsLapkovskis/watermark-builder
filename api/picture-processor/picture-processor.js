@@ -1,9 +1,7 @@
 const { 
   Canvas, 
   Image,
-  registerFont, 
-  createImageData,
-  createCanvas
+  registerFont,
 } = require('canvas');
 const path = require('path');
 
@@ -30,37 +28,33 @@ function ensureFontsRegistered() {
     // Font files
 
     const robotoThin          = path.resolve(robotoDir, 'Roboto-Thin.ttf');
-    const robotoThinItalic    = path.resolve(robotoDir, 'Roboto-ThinItalic.ttf');
-    const robotoLight         = path.resolve(robotoDir, 'Roboto-Light.ttf');
-    const robotoLightItalic   = path.resolve(robotoDir, 'Roboto-LightItalic.ttf');
-    const robotoRegular       = path.resolve(robotoDir, 'Roboto-Regular.ttf');
-    const robotoItalic = path.resolve(robotoDir, 'Roboto-Italic.ttf');
-    const robotoMedium        = path.resolve(robotoDir, 'Roboto-Medium.ttf');
+    const robotoThinItalic    = path.resolve(robotoDir, 'Roboto-ThinItalic.ttf'  );
+    const robotoLight         = path.resolve(robotoDir, 'Roboto-Light.ttf'       );
+    const robotoLightItalic   = path.resolve(robotoDir, 'Roboto-LightItalic.ttf' );
+    const robotoRegular       = path.resolve(robotoDir, 'Roboto-Regular.ttf'     );
+    const robotoItalic        = path.resolve(robotoDir, 'Roboto-Italic.ttf'      );
+    const robotoMedium        = path.resolve(robotoDir, 'Roboto-Medium.ttf'      );
     const robotoMediumItalic  = path.resolve(robotoDir, 'Roboto-MediumItalic.ttf');
-    const robotoBold          = path.resolve(robotoDir, 'Roboto-Bold.ttf');
-    const robotoBoldItalic    = path.resolve(robotoDir, 'Roboto-BoldItalic.ttf');
-    const robotoBlack         = path.resolve(robotoDir, 'Roboto-Black.ttf');
-    const robotoBlackItalic   = path.resolve(robotoDir, 'Roboto-BlackItalic.ttf');
+    const robotoBold          = path.resolve(robotoDir, 'Roboto-Bold.ttf'        );
+    const robotoBoldItalic    = path.resolve(robotoDir, 'Roboto-BoldItalic.ttf'  );
+    const robotoBlack         = path.resolve(robotoDir, 'Roboto-Black.ttf'       );
+    const robotoBlackItalic   = path.resolve(robotoDir, 'Roboto-BlackItalic.ttf' );
 
 
     // Register fonts
 
-    registerFont(robotoThin,       { family: 'Roboto', weight: '100', style: 'normal' });
-    registerFont(robotoThinItalic,       { family: 'Roboto', weight: '100', style: 'italic' });
-    registerFont(robotoLight,       { family: 'Roboto', weight: '300', style: 'normal' });
-    registerFont(robotoLightItalic,       { family: 'Roboto', weight: '300', style: 'italic' });
-
-    registerFont(robotoRegular,       { family: 'Roboto', weight: '400', style: 'normal' });
+    registerFont(robotoThin,         { family: 'Roboto', weight: '100', style: 'normal' });
+    registerFont(robotoThinItalic,   { family: 'Roboto', weight: '100', style: 'italic' });
+    registerFont(robotoLight,        { family: 'Roboto', weight: '300', style: 'normal' });
+    registerFont(robotoLightItalic,  { family: 'Roboto', weight: '300', style: 'italic' });
+    registerFont(robotoRegular,      { family: 'Roboto', weight: '400', style: 'normal' });
     registerFont(robotoItalic,       { family: 'Roboto', weight: '400', style: 'italic' });
-
     registerFont(robotoMedium,       { family: 'Roboto', weight: '500', style: 'normal' });
-    registerFont(robotoMediumItalic,       { family: 'Roboto', weight: '500', style: 'italic' });
-
-    registerFont(robotoBold,       { family: 'Roboto', weight: '700', style: 'normal' });
-    registerFont(robotoBoldItalic,       { family: 'Roboto', weight: '700', style: 'italic' });
-
-    registerFont(robotoBlack,       { family: 'Roboto', weight: '900', style: 'normal' });
-    registerFont(robotoBlackItalic, { family: 'Roboto', weight: '900', style: 'italic' });
+    registerFont(robotoMediumItalic, { family: 'Roboto', weight: '500', style: 'italic' });
+    registerFont(robotoBold,         { family: 'Roboto', weight: '700', style: 'normal' });
+    registerFont(robotoBoldItalic,   { family: 'Roboto', weight: '700', style: 'italic' });
+    registerFont(robotoBlack,        { family: 'Roboto', weight: '900', style: 'normal' });
+    registerFont(robotoBlackItalic,  { family: 'Roboto', weight: '900', style: 'italic' });
 
     areFontsRegistered = true;
 }
@@ -124,6 +118,8 @@ class ImageProcessorTextWatermarkDescription {
     #fontWeight;
     #color;
     #opacity;
+    #strokeColor;
+    #strokeOpacity;
     #shadowOffsetX;
     #shadowOffsetY;
     #shadowBlurRadius;
@@ -139,12 +135,14 @@ class ImageProcessorTextWatermarkDescription {
         defaultFontUnderline   : false,
         defaultFontLineThrough : false,
         defaultFontWeight      : 400,
-        defaultColor           : 0xFFFFFF,
+        defaultColor           : 0x000000,
         defaultOpacity         : 1.0,
+        defaultStrokeColor     : 0x000000,
+        defaultStrokeOpacity   : 0,
         defaultShadowOffsetX   : 0,
         defaultShadowOffsetY   : 0,
         defaultShadowBlurRadius: 0,
-        defaultShadowColor     : 0xFFFFFF,
+        defaultShadowColor     : 0x000000,
         defaultShadowOpacity   : 0,
         defaultRotationAngle   : 0,
         defaultDensityLevel    : 3,
@@ -162,6 +160,8 @@ class ImageProcessorTextWatermarkDescription {
         fontWeight,
         color,
         opacity,
+        strokeColor,
+        strokeOpacity,
         shadowOffsetX,
         shadowOffsetY,
         shadowBlurRadius,
@@ -178,6 +178,8 @@ class ImageProcessorTextWatermarkDescription {
         this.#fontWeight       = fontWeight;
         this.#color            = color;
         this.#opacity          = opacity;
+        this.#strokeColor      = strokeColor;
+        this.#strokeOpacity    = strokeOpacity;
         this.#shadowOffsetX    = shadowOffsetX;
         this.#shadowOffsetY    = shadowOffsetY;
         this.#shadowBlurRadius = shadowBlurRadius;
@@ -200,6 +202,7 @@ class ImageProcessorTextWatermarkDescription {
     get fontSize() {
         return (
             typeof this.#fontSize === "number" 
+                && !isNaN(this.#fontSize)
                 && this.#fontSize >= 0
                 && this.#fontSize <= ImageProcessorTextWatermarkDescription.constants.maxNumber
         )
@@ -228,6 +231,7 @@ class ImageProcessorTextWatermarkDescription {
     get fontWeight() {
         return (
             typeof this.#fontWeight === "number"
+                && !isNaN(this.#fontWeight)
                 && this.#fontWeight % 100 === 0
                 && this.#fontWeight >= 100
                 && this.#fontWeight <= 900
@@ -258,9 +262,32 @@ class ImageProcessorTextWatermarkDescription {
             : ImageProcessorTextWatermarkDescription.constants.defaultOpacity;  
     }
 
+    get strokeColor() {
+        if (typeof this.#strokeColor === "string" && this.#strokeColor.length == 6) {
+            const strokeColor = parseInt(this.#strokeColor, 16);
+
+            if (!isNaN(strokeColor)) {
+                return strokeColor;
+            }
+        }
+
+        return ImageProcessorTextWatermarkDescription.constants.defaultStrokeColor;
+    }
+
+    get strokeOpacity() {
+        return (
+            typeof this.#strokeOpacity === "number"
+                && this.#strokeOpacity >= 0.0
+                && this.#strokeOpacity <= 1.0
+        )
+            ? this.#strokeOpacity
+            : ImageProcessorTextWatermarkDescription.constants.defaultStrokeOpacity;  
+    }
+
     get shadowOffsetX() {
         return (
             typeof this.#shadowOffsetX === "number"
+                && !isNaN(this.#shadowOffsetX)
                 && Math.abs(this.#shadowOffsetX) <= ImageProcessorTextWatermarkDescription.constants.maxNumber
         )
             ? Math.round(this.#shadowOffsetX)
@@ -270,6 +297,7 @@ class ImageProcessorTextWatermarkDescription {
     get shadowOffsetY() {
         return (
             typeof this.#shadowOffsetY === "number"
+                && !isNaN(this.#shadowOffsetY)
                 && Math.abs(this.#shadowOffsetY) <= ImageProcessorTextWatermarkDescription.constants.maxNumber
         )
             ? Math.round(this.#shadowOffsetY)
@@ -279,6 +307,7 @@ class ImageProcessorTextWatermarkDescription {
     get shadowBlurRadius() {
         return (
             typeof this.#shadowBlurRadius === "number"
+                && !isNaN(this.#shadowBlurRadius)
                 && Math.abs(this.#shadowBlurRadius) <= ImageProcessorTextWatermarkDescription.constants.maxNumber
         )
             ? Math.round(this.#shadowBlurRadius)
@@ -300,6 +329,7 @@ class ImageProcessorTextWatermarkDescription {
     get shadowOpacity() {
         return (
             typeof this.#shadowOpacity === "number"
+                && !isNaN(this.#shadowOpacity)
                 && this.#shadowOpacity >= 0.0
                 && this.#shadowOpacity <= 1.0
         )
@@ -308,7 +338,7 @@ class ImageProcessorTextWatermarkDescription {
     }
 
     get rotationAngle() {
-        return (typeof this.#rotationAngle === "number")
+        return (typeof this.#rotationAngle === "number" && !isNaN(this.#rotationAngle))
             ? Math.round(this.#rotationAngle)
             : ImageProcessorTextWatermarkDescription.constants.defaultRotationAngle;
     }
@@ -316,7 +346,8 @@ class ImageProcessorTextWatermarkDescription {
     get densityLevel() {
         return (
             typeof this.#densityLevel === "number" 
-                && this.#densityLevel >= ImageProcessorTextWatermarkDescription.minDensityLevel 
+                && !isNaN(this.#densityLevel)
+                && this.#densityLevel >= ImageProcessorTextWatermarkDescription.constants.minDensityLevel 
                 && this.#densityLevel <= ImageProcessorTextWatermarkDescription.constants.maxDensityLevel
         )
             ? Math.round(this.#densityLevel)
@@ -328,12 +359,14 @@ class ImageProcessorPictureWatermarkDescription {
 
     #buffer;
     #mimeType;
+    #opacity;
     #rotationAngle;
     #densityLevel;
 
     static constants = Object.freeze({
         defaultRotationAngle: 0,
         defaultDensityLevel : 3,
+        defaultOpacity      : 1,
         minDensityLevel     : 1,
         maxDensityLevel     : 5
     });
@@ -341,11 +374,13 @@ class ImageProcessorPictureWatermarkDescription {
     constructor({
         buffer,
         mimeType,
+        opacity,
         rotationAngle,
         densityLevel
     }) {
         this.#buffer        = buffer;
         this.#mimeType      = mimeType;
+        this.#opacity       = opacity;
         this.#rotationAngle = rotationAngle;
         this.#densityLevel  = densityLevel;
     }
@@ -358,16 +393,27 @@ class ImageProcessorPictureWatermarkDescription {
         return this.#mimeType;
     }
 
+    get opacity() {
+        return (
+            typeof this.#opacity === "number"
+                && this.#opacity >= 0.0
+                && this.#opacity <= 1.0
+        )
+            ? this.#opacity
+            : ImageProcessorTextWatermarkDescription.constants.defaultOpacity;  
+    }
+
     get rotationAngle() {
-        return (typeof this.#rotationAngle === "number")
+        return (typeof this.#rotationAngle === "number" && !isNaN(this.#rotationAngle))
             ? Math.round(this.#rotationAngle)
             : ImageProcessorPictureWatermarkDescription.constants.defaultRotationAngle;
     }
 
     get densityLevel() {
         return (
-            typeof this.#densityLevel === "number" 
-                && this.#densityLevel >= ImageProcessorPictureWatermarkDescription.minDensityLevel 
+            typeof this.#densityLevel === "number"
+                && !isNaN(this.#densityLevel)
+                && this.#densityLevel >= ImageProcessorPictureWatermarkDescription.constants.minDensityLevel 
                 && this.#densityLevel <= ImageProcessorPictureWatermarkDescription.constants.maxDensityLevel
         )
             ? Math.round(this.#densityLevel)
@@ -410,57 +456,144 @@ class ImageProcessor {
             const canvas  = this.#createCanvasObject (image, mimeType);
             const context = this.#createContextObject(canvas);
 
-            this.#drawWatermark(context, image, watermarkDescription);
+            try {
+                await this.#drawWatermark(context, image, watermarkDescription);
+            }
+            catch (e) {
+                reject(e);
+            }
 
-            resolve(canvas.toBuffer()); // TODO here
+            resolve(canvas.toBuffer());
         });
     }
 
-    #drawWatermark(context, image, watermarkDescription) {
-        const width  = image.width;
-        const height = image.height;
+    async #drawWatermark(context, image, watermarkDescription) {
+        const imageWidth  = image.width;
+        const imageHeight = image.height;
 
         context.drawImage(image, 0, 0);
 
         if (watermarkDescription instanceof ImageProcessorTextWatermarkDescription) {
-            const text         = watermarkDescription.text;
-            const fontFamily   = watermarkDescription.fontFamily;
-            const fontSize     = watermarkDescription.fontSize;
-            const fontItalic   = watermarkDescription.fontItalic;
-            const fontWeight   = watermarkDescription.fontWeight;
-            const color        = watermarkDescription.color;
-            const opacity      = watermarkDescription.opacity;
-            const densityLevel = watermarkDescription.densityLevel;
+            const text             = watermarkDescription.text;
+            const fontFamily       = watermarkDescription.fontFamily;
+            const fontSize         = watermarkDescription.fontSize;
+            const fontItalic       = watermarkDescription.fontItalic;
+            const fontWeight       = watermarkDescription.fontWeight;
+            const fontUnderline    = watermarkDescription.fontUnderline;
+            const fontLineThrough  = watermarkDescription.fontLineThrough;
+            const color            = watermarkDescription.color;
+            const opacity          = watermarkDescription.opacity;
+            const strokeColor      = watermarkDescription.strokeColor;
+            const strokeOpacity    = watermarkDescription.strokeOpacity;
+            const densityLevel     = watermarkDescription.densityLevel;
+            const rotationAngle    = watermarkDescription.rotationAngle;
+            const shadowOffsetX    = watermarkDescription.shadowOffsetX;
+            const shadowOffsetY    = watermarkDescription.shadowOffsetY;
+            const shadowBlurRadius = watermarkDescription.shadowBlurRadius;
+            const shadowColor      = watermarkDescription.shadowColor;
+            const shadowOpacity    = watermarkDescription.shadowOpacity;
 
-            context.fillStyle = ImageProcessorUtils.hexToRgba         (color, opacity);
-            context.font      = ImageProcessorUtils.fontFromComponents(fontFamily, fontSize, fontItalic, fontWeight);
+            const rotationAngleInRad = ImageProcessorUtils.degreesToRadians(rotationAngle);
+            const sinAngle           = Math.abs(Math.sin(rotationAngleInRad));
+            const cosAngle           = Math.abs(Math.cos(rotationAngleInRad));
+
+            const width  = imageWidth  * cosAngle + imageHeight * sinAngle;
+            const height = imageHeight * cosAngle + imageWidth  * sinAngle;
+
+            context.fillStyle     = ImageProcessorUtils.hexToRgba(color, opacity);
+            context.font          = ImageProcessorUtils.fontFromComponents(fontFamily, fontSize, fontItalic, fontWeight);
+            context.strokeStyle   = ImageProcessorUtils.hexToRgba(strokeColor, strokeOpacity);         
+            context.shadowColor   = ImageProcessorUtils.hexToRgba(shadowColor, shadowOpacity);
+            context.shadowOffsetX = shadowOffsetX;
+            context.shadowOffsetY = shadowOffsetY;
+            context.shadowBlur    = shadowBlurRadius;
+            
+            context.translate(imageWidth / 2, imageHeight / 2);
+            context.rotate   (rotationAngleInRad);
+            context.translate(-width / 2, -height / 2);
 
             const textMetrics              = context.measureText(text);
             const textWidth                = textMetrics.width;
             const textHeight               = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
             const horizontalCapacity       = width  / textWidth;
             const verticalCapacity         = height / textHeight;
-            const frequency                = densityLevel / ImageProcessorTextWatermarkDescription.constants.maxDensityLevel;
-            const horizontalItemCount      = Math.round(horizontalCapacity * 0.4 + 0.4 * frequency);
-            const verticalItemCount        = Math.round(verticalCapacity * 0.3 + 0.3 * frequency);
+            const density                  = densityLevel / ImageProcessorTextWatermarkDescription.constants.maxDensityLevel;
+            const horizontalItemCount      = Math.max(1, Math.round(horizontalCapacity * 0.2 + horizontalCapacity * 0.6 * density));
+            const verticalItemCount        = Math.max(1, Math.round(verticalCapacity * 0.1 + verticalCapacity * 0.3 * density));
             const horizontalRemainingSpace = width - horizontalItemCount * textWidth;
             const verticalRemainingSpace   = height - verticalItemCount * textHeight;
             const horizontalBetweenSpace   = horizontalRemainingSpace / horizontalItemCount;
             const horizontalLeadingSpace   = horizontalBetweenSpace / 2;
             const verticalBetweenSpace     = verticalRemainingSpace / verticalItemCount;
             const verticalLeadingSpace     = textHeight + verticalBetweenSpace / 2;
+            const decorationLineHeight     = textHeight / 10;
 
             for (let v = 0; v < verticalItemCount; v++) {
                 for (let h = 0; h < horizontalItemCount; h++) {
                     const xOffset = horizontalLeadingSpace + h * (textWidth + horizontalBetweenSpace);
                     const yOffset = verticalLeadingSpace   + v * (textHeight  + verticalBetweenSpace);
+                    
+                    context.fillText  (text, xOffset, yOffset);
+                    context.strokeText(text, xOffset, yOffset);
 
-                    context.fillText(text, xOffset, yOffset);
+                    if (fontUnderline) {
+                        context.fillRect(xOffset, yOffset + decorationLineHeight, textWidth, decorationLineHeight);
+                    }
+                    if (fontLineThrough) {
+                        context.fillRect(xOffset, yOffset - textHeight / 2, textWidth, decorationLineHeight);
+                    }
                 }
             }
         }
         else if (watermarkDescription instanceof ImageProcessorPictureWatermarkDescription) {
+            const buffer        = watermarkDescription.buffer;
+            const opacity       = watermarkDescription.opacity;
+            const densityLevel  = watermarkDescription.densityLevel;
+            const rotationAngle = watermarkDescription.rotationAngle;
 
+            let watermarkImage;
+
+            try {
+                watermarkImage = await this.#createImageObject(buffer);
+            }
+            catch (_) {
+                throw new ImageProcessorError(IMAGE_PROCESSOR_ERROR_FAILED_LOADING_WATERMARK_IMAGE_FROM_BUFFER);
+            }
+
+            const rotationAngleInRad = ImageProcessorUtils.degreesToRadians(rotationAngle);
+            const sinAngle           = Math.abs(Math.sin(rotationAngleInRad));
+            const cosAngle           = Math.abs(Math.cos(rotationAngleInRad));
+
+            const width  = imageWidth  * cosAngle + imageHeight * sinAngle;
+            const height = imageHeight * cosAngle + imageWidth  * sinAngle;
+
+            context.globalAlpha = opacity;
+            context.translate(imageWidth / 2, imageHeight / 2);
+            context.rotate   (rotationAngleInRad);
+            context.translate(-width / 2, -height / 2);
+
+            const watermarkWidth           = watermarkImage.width;
+            const watermarkHeight          = watermarkImage.height;
+            const horizontalCapacity       = width / watermarkWidth;
+            const verticalCapacity         = height / watermarkHeight;
+            const density                  = densityLevel / ImageProcessorPictureWatermarkDescription.constants.maxDensityLevel;
+            const horizontalItemCount      = Math.max(1, Math.round(horizontalCapacity * 0.2 + horizontalCapacity * 0.6 * density));
+            const verticalItemCount        = Math.max(1, Math.round(verticalCapacity * 0.1 + verticalCapacity * 0.3 * density));
+            const horizontalRemainingSpace = width - horizontalItemCount * watermarkWidth;
+            const verticalRemainingSpace   = height - verticalItemCount * watermarkHeight;
+            const horizontalBetweenSpace   = horizontalRemainingSpace / horizontalItemCount;
+            const horizontalLeadingSpace   = horizontalBetweenSpace / 2;
+            const verticalBetweenSpace     = verticalRemainingSpace / verticalItemCount;
+            const verticalLeadingSpace     = verticalBetweenSpace / 2;
+            
+            for (let v = 0; v < verticalItemCount; v++) {
+                for (let h = 0; h < horizontalItemCount; h++) {
+                    const xOffset = horizontalLeadingSpace + h * (watermarkWidth + horizontalBetweenSpace);
+                    const yOffset = verticalLeadingSpace   + v * (watermarkHeight  + verticalBetweenSpace);
+
+                    context.drawImage(watermarkImage, xOffset, yOffset);
+                }
+            }
         }
     }
 
@@ -582,11 +715,17 @@ class ImageProcessorValidator {
 class ImageProcessorUtils {
 
     static hexToRgba(hex, opacity) {
-        const red   = ((hex >> 16) & 0xFF) / 0xFF;
-        const green = ((hex >>  8) & 0xFF) / 0xFF;
-        const blue  = ((hex >>  0) & 0xFF) / 0xFF;
+        const red   = (hex >> 16) & 0xFF;
+        const green = (hex >>  8) & 0xFF;
+        const blue  = (hex >>  0) & 0xFF;
         
         return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
+    }
+
+    static degreesToRadians(degrees) {
+        let normalizedDegrees = degrees % 360;
+        normalizedDegrees = normalizedDegrees < 0 ? 360 + normalizedDegrees : normalizedDegrees;
+        return normalizedDegrees * (Math.PI / 180);
     }
 
     static fontFromComponents(family, size, italic, weight) {

@@ -2,7 +2,6 @@ const express = require('express');
 const path    = require('path');
 const multer  = require('multer');
 const {
-  SUPPORTED_MIME_TYPES,
   ImageProcessor,
   ImageProcessorErrorMask,
   ImageProcessorParams,
@@ -44,7 +43,7 @@ const upload = multer({
     fieldNameSize: 100,
     fieldSize    : 10 * 1024,
     fields       : 50,
-    fileSize     : 10 * 1024 * 1024,
+    fileSize     : 5 * 1024 * 1024,
     files        : 2,
     parts        : Infinity,
     headerPairs  : 2000
@@ -57,39 +56,27 @@ const uploadFields = [
 ];
 
 app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) => {
-  // try {
-    const pictureFile = req.files["picture"][0];
+  try {
+    let pictureFile = req.files["picture"];
 
-    if (pictureFile === undefined || pictureFile === null) {
+    if (pictureFile === undefined || pictureFile === null || pictureFile.length == 0) {
       throw new ApiError(API_ERROR_CODE_NO_PICTURE_PROVIDED);
     }
 
-    // pictureFile = pictureFile[0];
+    pictureFile = pictureFile[0];
 
-    const customWatermark = req.files["watermark"];
+    let   customWatermark = req.files["watermark"];
     const watermarkText   = req.body ["text"     ];
 
-    if (customWatermark !== undefined && customWatermark !== null) {
+    if (customWatermark !== undefined && customWatermark !== null && customWatermark.length !== 0) {
+      customWatermark = customWatermark[0];
 
-    }
-    else if (watermarkText !== undefined && watermarkText !== null) {
-      console.log(JSON.stringify(req.body));
-
-      const watermarkDescription = new ImageProcessorTextWatermarkDescription({
-        text: req.body["text"],
-        fontFamily: req.body["font_family"],
-        fontSize: req.body["font_size"],
-        fontItalic: req.body["font_italic"],
-        fontDecorations: req.body["font_decorations"],
-        fontWeight: req.body["font_weight"],
-        color: req.body["color"],
-        opacity: req.body["opacity"],
-        shadowOffsetX: req.body["shadow_offset_x"],
-        shadowOffsetY: req.body["shadow_offset_y"],
-        shadowBlurRadius: req.body["shadow_blur_radius"],
-        shadowOpactity: req.body["shadow_opacity"],
-        rotationAngle: req.body["rotation_angle"],
-        densityLevel: req.body["density_level"]
+      const watermarkDescription = new ImageProcessorPictureWatermarkDescription({
+        buffer       : customWatermark.buffer,
+        mimeType     : customWatermark.mimetype,
+        opacity      : parseFloat(req.body["opacity"       ]),
+        rotationAngle: parseInt  (req.body["rotation_angle"]),
+        densityLevel : parseInt  (req.body["density_level" ])
       });
 
       const imageProcessorParams = new ImageProcessorParams(pictureFile.buffer, pictureFile.mimetype, watermarkDescription);
@@ -98,16 +85,46 @@ app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) =
 
       res.setHeader('Content-Type', pictureFile.mimetype);
       res.setHeader('Content-Disposition', `attachment; filename=${pictureFile.originalname}`);
+      res.status   (200);
+      res.send     (buffer);
+    }
+    else if (watermarkText !== undefined && watermarkText !== null) {
+      const watermarkDescription = new ImageProcessorTextWatermarkDescription({
+        text            :            req.body["text"              ],
+        fontFamily      :            req.body["font_family"       ],
+        fontSize        : parseInt  (req.body["font_size"         ]),
+        fontItalic      :            req.body["font_italic"       ] === "true",
+        fontDecorations :            req.body["font_decorations"  ],
+        fontWeight      : parseInt  (req.body["font_weight"       ]),
+        color           :            req.body["color"             ],
+        opacity         : parseFloat(req.body["opacity"           ]),
+        strokeColor     :            req.body["stroke_color"      ],
+        strokeOpacity   : parseFloat(req.body["stroke_opacity"    ]),
+        shadowOffsetX   : parseInt  (req.body["shadow_offset_x"   ]),
+        shadowOffsetY   : parseInt  (req.body["shadow_offset_y"   ]),
+        shadowBlurRadius: parseInt  (req.body["shadow_blur_radius"]),
+        shadowColor     :            req.body["shadow_color"      ],
+        shadowOpactity  : parseFloat(req.body["shadow_opacity"    ]),
+        rotationAngle   : parseInt  (req.body["rotation_angle"    ]),
+        densityLevel    : parseInt  (req.body["density_level"     ])
+      });
 
-      res.send(buffer);
+      const imageProcessorParams = new ImageProcessorParams(pictureFile.buffer, pictureFile.mimetype, watermarkDescription);
+
+      const buffer = await new ImageProcessor().processPicture(imageProcessorParams);
+
+      res.setHeader('Content-Type', pictureFile.mimetype);
+      res.setHeader('Content-Disposition', `attachment; filename=${pictureFile.originalname}`);
+      res.status   (200);
+      res.send     (buffer);
     }
     else {
       throw new ApiError(API_ERROR_CODE_NO_WATERMARK_DATA_PROVIDED);
     }
-  // }
-  // catch (e) {
-  //   next(e);
-  // }
+  }
+  catch (e) {
+    next(e);
+  }
 });
 
 
@@ -200,18 +217,26 @@ app.use((err, req, res, next) => {
                                | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_FAILED_LOADING_IMAGE_FROM_BUFFER;
     const watermarkImageErrors = ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_BUFFER_TYPE
                                | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_FAILED_LOADING_WATERMARK_IMAGE_FROM_BUFFER;
+    const mimeTypeErrors  = ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_INVALID_MIME_TYPE_TYPE
+                          | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_UNSUPPORTED_MIME_TYPE
+                          | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_INVALID_WATERMARK_MIME_TYPE_TYPE
+                          | ImageProcessorErrorMask.IMAGE_PROCESSOR_ERROR_UNSUPPORTED_WATERMARK_MIME_TYPE;
 
-    if (mask & watermarkTextErrors != 0) {
+    if ((mask & watermarkTextErrors) != 0) {
       errorCodes.push({ code: API_ERROR_CODE_INVALID_WATERMARK_TEXT });
       status = 400; // Bad Request
     }
-    if (mask & imageBufferErrors != 0) {
+    if ((mask & imageBufferErrors) != 0) {
       errorCodes.push({ code: API_ERROR_CODE_INVALID_IMAGE_BUFFER });
       status = 400; // Bad Request
     }
-    if (mask & watermarkImageErrors != 0) {
+    if ((mask & watermarkImageErrors) != 0) {
       errorCodes.push({ code: API_ERROR_CODE_INVALID_WATERMARK_IMAGE_BUFFER });
       status = 400; // Bad Request
+    }
+    if ((mask & mimeTypeErrors) != 0) {
+      errorCodes.push({ code: API_ERROR_CODE_INVALID_FILE_TYPE });
+      status = 415; // Unsupported Media Type
     }
 
   }
