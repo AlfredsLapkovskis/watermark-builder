@@ -8,21 +8,12 @@ const {
   ImageProcessorTextWatermarkDescription,
   ImageProcessorPictureWatermarkDescription,
   ImageProcessorError
-} = require('./picture-processor');
+} = require('./image-processor');
 const { MulterError } = require('multer');
-
-// TODO: Implement error handling.
 
 const app = express();
 
 app.use(express.static(path.resolve(__dirname, '../client/build')));
-
-const supportedMimetypes = [
-  'image/png',
-  'image/jpeg',
-  'image/png',
-  'image/svg+xml'
-];
 
 class ApiError {
   
@@ -55,6 +46,9 @@ const uploadFields = [
   { name: 'watermark', maxCount: 1 }
 ];
 
+
+// API
+
 app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) => {
   try {
     let pictureFile = req.files["picture"];
@@ -81,7 +75,7 @@ app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) =
 
       const imageProcessorParams = new ImageProcessorParams(pictureFile.buffer, pictureFile.mimetype, watermarkDescription);
 
-      const buffer = await new ImageProcessor().processPicture(imageProcessorParams);
+      const buffer = await new ImageProcessor().processImage(imageProcessorParams);
 
       res.setHeader('Content-Type', pictureFile.mimetype);
       res.setHeader('Content-Disposition', `attachment; filename=${pictureFile.originalname}`);
@@ -111,7 +105,7 @@ app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) =
 
       const imageProcessorParams = new ImageProcessorParams(pictureFile.buffer, pictureFile.mimetype, watermarkDescription);
 
-      const buffer = await new ImageProcessor().processPicture(imageProcessorParams);
+      const buffer = await new ImageProcessor().processImage(imageProcessorParams);
 
       res.setHeader('Content-Type', pictureFile.mimetype);
       res.setHeader('Content-Disposition', `attachment; filename=${pictureFile.originalname}`);

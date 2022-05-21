@@ -430,7 +430,7 @@ class ImageProcessor {
         ensureFontsRegistered();
     }
 
-    async processPicture(params) {
+    async processImage(params) {
         return new Promise(async (resolve, reject) => {
             const error = ImageProcessorValidator.validateParams(params);
 
