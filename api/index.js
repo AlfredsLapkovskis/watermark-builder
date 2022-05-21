@@ -131,7 +131,7 @@ app.post('/api/watermark', upload.fields(uploadFields), async (req, res, next) =
 // Client
 
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
+  res.send("No GUI available :(");
 });
 
 
